@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+service Predictions {
+	rpc PredictNumber (HandwrittenNumberRequest) returns (HandwrittenNumberResponse);
+}
+
+message HandwrittenNumberRequest{
+	bytes image_bytes = 1;
+}
+
+message HandwrittenNumberResponse {
+	int32 image_number = 1;
+}
+

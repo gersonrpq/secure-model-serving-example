@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /var/certs:/etc/nginx/certs:ro
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+    labels:
+      - com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    restart: always
+    volumes:
+      - /var/certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    volumes_from:
+      - nginx-proxy:rw
+
+  model-server:
+    image: model-server
+    # DOCKER_BUILDKIT=1 docker build . -f models-server/Dockerfile \
+    # -t model-server --secret id=ca.key,src=ca.key
+    expose:
+      - 443
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  front-service:
+    image: front-service
+    # DOCKER_BUILDKIT=1 docker build . -f front-service/Dockerfile \
+    # -t front-service --secret id=ca.key,src=ca.key
+    environment:
+       SERVER_HOST: model-server:443
+       VIRTUAL_HOST: projectml.dhguissepe.com
+       LETSENCRYPT_HOST: projectml.dhguissepe.com
+       LETSENCRYPT_EMAIL: ing.gersonp@gmail.com
+    expose:
+      - 8501
+    deploy:
+      restart_policy: 
+        condition: on-failure
+
+
